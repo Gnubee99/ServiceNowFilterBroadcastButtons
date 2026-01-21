@@ -12,7 +12,7 @@
       parsedFilters = filters;
     }
   } catch (e) {
-    gs.error('Filter Broadcast Buttons Widget: Invalid JSON in filters option - ' + e.message);
+    gs.error('Filter Broadcast Buttons Widget: Invalid JSON in filters option - ' + e.message + '. Filters value: ' + filters);
   }
   
   // Set data for the client
