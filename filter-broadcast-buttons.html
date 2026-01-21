@@ -1,6 +1,25 @@
 <div class="filter-broadcast-buttons">
   <h3 ng-if="c.data.title">{{c.data.title}}</h3>
-  <div class="btn-group" role="group" aria-label="Filter buttons">
+  
+  <!-- Grouped filter structure -->
+  <div ng-if="c.data.isGrouped">
+    <div ng-repeat="group in c.data.filterGroups" class="filter-group">
+      <h4 class="filter-group-title">{{group.name}}</h4>
+      <div class="btn-group" role="group" aria-label="{{group.name}} filter buttons">
+        <button 
+          type="button" 
+          class="btn btn-default"
+          ng-repeat="(filter, label) in group.filters"
+          ng-click="c.applyFilter(filter, label, group.name)"
+          ng-class="{'btn-primary': c.isFilterActive(filter, group.name), 'btn-default': !c.isFilterActive(filter, group.name)}">
+          {{label}}
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Flat filter structure (backward compatibility) -->
+  <div ng-if="!c.data.isGrouped" class="btn-group" role="group" aria-label="Filter buttons">
     <button 
       type="button" 
       class="btn btn-default"
@@ -9,6 +28,10 @@
       ng-class="{'btn-primary': c.isFilterActive(filter), 'btn-default': !c.isFilterActive(filter)}">
       {{label}}
     </button>
+  </div>
+  
+  <!-- Clear button -->
+  <div class="clear-button-container">
     <button 
       type="button" 
       class="btn btn-default"
