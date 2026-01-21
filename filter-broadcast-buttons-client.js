@@ -3,24 +3,45 @@ function($scope, $rootScope) {
   
   // Initialize the widget
   c.$onInit = function() {
-    c.data.activeFilter = null;
+    c.data.activeFilters = {};
+  };
+  
+  // Check if a filter is currently active
+  c.isFilterActive = function(filter) {
+    return c.data.activeFilters.hasOwnProperty(filter);
   };
   
   // Apply a filter and broadcast it to list widgets
   c.applyFilter = function(filter, label) {
-    c.data.activeFilter = filter;
+    // Toggle behavior: if filter is already active, remove it
+    if (c.isFilterActive(filter)) {
+      delete c.data.activeFilters[filter];
+    } else {
+      // Add filter to active filters
+      c.data.activeFilters[filter] = label;
+    }
     
-    // Parse the filter string to extract field and value
+    // Build combined filter with OR logic
+    var filterKeys = Object.keys(c.data.activeFilters);
+    var combinedFilter = '';
+    
+    if (filterKeys.length > 0) {
+      // Join multiple filters with ^OR operator
+      combinedFilter = filterKeys.join('^OR');
+    }
+    
+    // Parse the combined filter string to extract field and value
     // For simple filters like "u_state=1", extract field and value
-    // For complex filters (e.g., "priority<=2", "stateIN1,2"), just send the full filter
     var field = '';
     var value = '';
     
-    // Try to parse simple field=value pattern
-    var simpleMatch = filter.match(/^([^=<>!]+)=(.+)$/);
-    if (simpleMatch) {
-      field = simpleMatch[1];
-      value = simpleMatch[2];
+    // Try to parse simple field=value pattern from first filter
+    if (filterKeys.length > 0) {
+      var simpleMatch = filterKeys[0].match(/^([^=<>!]+)=(.+)$/);
+      if (simpleMatch) {
+        field = simpleMatch[1];
+        value = simpleMatch[2];
+      }
     }
     
     // Broadcast the filter to list widgets
@@ -28,8 +49,9 @@ function($scope, $rootScope) {
     $rootScope.$broadcast('sp.list.filter.add', {
       field: field,
       value: value,
-      filter: filter,
-      label: label
+      filter: combinedFilter,
+      label: label,
+      activeFilters: c.data.activeFilters
     });
     
     // Also broadcast with a custom event name if specified in options
@@ -37,15 +59,16 @@ function($scope, $rootScope) {
       $rootScope.$broadcast(c.options.broadcast_event, {
         field: field,
         value: value,
-        filter: filter,
-        label: label
+        filter: combinedFilter,
+        label: label,
+        activeFilters: c.data.activeFilters
       });
     }
   };
   
   // Clear the active filter
   c.clearFilter = function() {
-    c.data.activeFilter = null;
+    c.data.activeFilters = {};
     
     // Broadcast clear filter event
     $rootScope.$broadcast('sp.list.filter.clear', {

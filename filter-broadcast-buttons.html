@@ -6,7 +6,7 @@
       class="btn btn-default"
       ng-repeat="(filter, label) in c.data.filters"
       ng-click="c.applyFilter(filter, label)"
-      ng-class="{'btn-primary': c.data.activeFilter === filter, 'btn-default': c.data.activeFilter !== filter}">
+      ng-class="{'btn-primary': c.isFilterActive(filter), 'btn-default': !c.isFilterActive(filter)}">
       {{label}}
     </button>
     <button 
@@ -14,7 +14,7 @@
       class="btn btn-default"
       ng-if="c.options.show_clear_button"
       ng-click="c.clearFilter()"
-      ng-class="{'btn-warning': c.data.activeFilter}">
+      ng-class="{'btn-warning': Object.keys(c.data.activeFilters).length > 0}">
       Clear Filter
     </button>
   </div>
