@@ -14,7 +14,7 @@
       class="btn btn-default"
       ng-if="c.options.show_clear_button"
       ng-click="c.clearFilter()"
-      ng-class="{'btn-warning': Object.keys(c.data.activeFilters).length > 0}">
+      ng-class="{'btn-warning': c.hasActiveFilters()}">
       Clear Filter
     </button>
   </div>

@@ -8,7 +8,12 @@ function($scope, $rootScope) {
   
   // Check if a filter is currently active
   c.isFilterActive = function(filter) {
-    return c.data.activeFilters.hasOwnProperty(filter);
+    return Object.prototype.hasOwnProperty.call(c.data.activeFilters, filter);
+  };
+  
+  // Check if any filters are active
+  c.hasActiveFilters = function() {
+    return Object.keys(c.data.activeFilters).length > 0;
   };
   
   // Apply a filter and broadcast it to list widgets
