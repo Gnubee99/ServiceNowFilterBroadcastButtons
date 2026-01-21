@@ -7,8 +7,10 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 - **Dynamic Filter Buttons**: Create multiple filter buttons from a JSON configuration
 - **Broadcast Filtering**: Filters are broadcast to list widgets using Angular's event system
 - **Additive Filtering**: Filters add onto existing table filters rather than replacing them
-- **Active State Indication**: Visual feedback showing which filter is currently active
-- **Clear Filter Option**: Optional button to clear the active filter
+- **Multi-Select with OR Logic**: Select multiple filter buttons to create OR-combined queries
+- **Toggle Functionality**: Click an active filter button to deselect it
+- **Active State Indication**: Visual feedback showing which filters are currently active
+- **Clear Filter Option**: Optional button to clear all active filters
 - **Customizable**: Configure button labels, filters, title, and custom broadcast events
 
 ## Installation
@@ -74,16 +76,42 @@ Custom event name to broadcast in addition to the standard `sp.list.filter.add` 
 
 ## How It Works
 
-### Broadcasting Filters
+### Multi-Select and Toggle Behavior
 
-When a filter button is clicked:
-1. The widget parses the filter string (e.g., `"u_state=1"` → field: `"u_state"`, value: `"1"`)
-2. Broadcasts the filter using Angular's `$rootScope.$broadcast()` with event name `sp.list.filter.add`
-3. The broadcast includes:
-   - `field`: The field name
-   - `value`: The field value
-   - `filter`: The complete filter string
+The widget now supports selecting multiple filter buttons simultaneously:
+- **Click to Select**: Click any filter button to activate it
+- **Click to Deselect**: Click an active filter button again to deselect it
+- **Multiple Selection**: Multiple buttons can be active at the same time
+- **Visual Feedback**: Active buttons are highlighted in blue, inactive buttons are white
+
+### Broadcasting Filters with OR Logic
+
+When filter buttons are selected:
+1. The widget tracks all active filters in an `activeFilters` object
+2. Builds a combined filter query by joining active filters with `^OR` operator
+3. Broadcasts the combined filter using Angular's `$rootScope.$broadcast()` with event name `sp.list.filter.add`
+4. The broadcast includes:
+   - `field`: The field name (from first filter)
+   - `value`: The field value (from first filter)
+   - `filter`: The complete combined filter string (e.g., `"u_state=1^ORu_state=3^ORpriority=1"`)
    - `label`: The button label
+   - `activeFilters`: Object containing all active filter/label pairs
+
+### Filter Examples
+
+**Single Filter:**
+- Select "Incomplete" → Broadcasts: `u_state=1`
+
+**Multiple Filters (OR Logic):**
+- Select "Incomplete" + "In Progress" → Broadcasts: `u_state=1^ORu_state=3`
+- Select "Incomplete" + "In Progress" + "High Priority" → Broadcasts: `u_state=1^ORu_state=3^ORpriority=1`
+
+**Toggle Off:**
+- Click "Incomplete" again → Removes it from active filters
+- Remaining filters are broadcast
+
+**Clear All:**
+- Click "Clear Filter" → All filters are deselected and a clear event is broadcast
 
 ### Integration with List Widgets
 
