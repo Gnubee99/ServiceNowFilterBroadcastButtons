@@ -78,11 +78,13 @@ function($scope, $rootScope) {
     var field = '';
     var value = '';
     
-    // Try to parse simple field=value pattern from first filter
+    // Try to parse simple field=value pattern from first individual filter
     if (groupFilters.length > 0) {
       var firstFilter = groupFilters[0];
-      // Extract the first field=value from potentially complex filter
-      var simpleMatch = firstFilter.match(/^([^=<>!]+)=(.+?)(?:\^OR|$)/);
+      // If first filter contains ^OR, extract just the first individual filter
+      var firstIndividualFilter = firstFilter.split('^OR')[0];
+      // Extract field and value from field=value pattern
+      var simpleMatch = firstIndividualFilter.match(/^([^=<>!]+)=(.+)$/);
       if (simpleMatch) {
         field = simpleMatch[1];
         value = simpleMatch[2];

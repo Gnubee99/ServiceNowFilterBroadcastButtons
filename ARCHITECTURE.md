@@ -199,14 +199,6 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_s
   "broadcast_event": "custom.filter.event"
 }
 ```
-    "u_state=3": "In Progress",
-    "u_state=4": "Complete"
-  },
-  "title": "Filter By:",
-  "show_clear_button": true,
-  "broadcast_event": "custom.filter.event"
-}
-```
 
 ## Key Design Decisions
 
