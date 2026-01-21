@@ -1,0 +1,21 @@
+<div class="filter-broadcast-buttons">
+  <h3 ng-if="c.data.title">{{c.data.title}}</h3>
+  <div class="btn-group" role="group" aria-label="Filter buttons">
+    <button 
+      type="button" 
+      class="btn btn-default"
+      ng-repeat="(filter, label) in c.data.filters"
+      ng-click="c.applyFilter(filter, label)"
+      ng-class="{'btn-primary': c.data.activeFilter === filter, 'btn-default': c.data.activeFilter !== filter}">
+      {{label}}
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-default"
+      ng-if="c.options.show_clear_button"
+      ng-click="c.clearFilter()"
+      ng-class="{'btn-warning': c.data.activeFilter}">
+      Clear Filter
+    </button>
+  </div>
+</div>
