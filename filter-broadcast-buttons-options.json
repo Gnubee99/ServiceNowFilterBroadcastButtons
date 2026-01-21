@@ -1,0 +1,30 @@
+[
+  {
+    "name": "filters",
+    "label": "Filters",
+    "type": "string",
+    "default_value": "{\"u_state=1\": \"Incomplete\", \"u_state=3\": \"In Progress\", \"u_state=4\": \"Complete\"}",
+    "hint": "JSON object of filters and labels. Format: {\"field=value\": \"Label\", ...}. Example: {\"u_state=1\": \"${Incomplete}\", \"u_state=3\": \"${In Progress}\", \"u_state=4\": \"${Complete}\"}"
+  },
+  {
+    "name": "title",
+    "label": "Title",
+    "type": "string",
+    "default_value": "Filter By:",
+    "hint": "Title to display above the filter buttons (optional)"
+  },
+  {
+    "name": "show_clear_button",
+    "label": "Show Clear Button",
+    "type": "boolean",
+    "default_value": "true",
+    "hint": "Show a button to clear the active filter"
+  },
+  {
+    "name": "broadcast_event",
+    "label": "Custom Broadcast Event",
+    "type": "string",
+    "default_value": "",
+    "hint": "Optional custom event name to broadcast in addition to standard events (e.g., 'custom.filter.event')"
+  }
+]
