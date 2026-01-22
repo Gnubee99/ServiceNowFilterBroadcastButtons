@@ -10,7 +10,7 @@
     "name": "title",
     "label": "Title",
     "type": "string",
-    "default_value": "Filter By:",
+    "default_value": "",
     "hint": "Title to display above the filter buttons (optional)"
   },
   {
