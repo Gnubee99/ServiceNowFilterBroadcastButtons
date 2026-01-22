@@ -1,3 +1,5 @@
+// Client controller for Filter Broadcast Buttons widget
+// Dependencies: $scope, $rootScope, $timeout (Angular core services)
 function($scope, $rootScope, $timeout) {
   var c = this;
   
@@ -16,10 +18,17 @@ function($scope, $rootScope, $timeout) {
     if (c.data.isGrouped) {
       for (var i = 0; i < c.data.filterGroups.length; i++) {
         var group = c.data.filterGroups[i];
-        c.textInputValues[group.name] = {};
+        c.ensureGroupExists(group.name);
       }
     } else {
-      c.textInputValues['default'] = {};
+      c.ensureGroupExists('default');
+    }
+  };
+  
+  // Helper to ensure a group's text input object exists
+  c.ensureGroupExists = function(groupName) {
+    if (!c.textInputValues[groupName]) {
+      c.textInputValues[groupName] = {};
     }
   };
   
@@ -52,9 +61,7 @@ function($scope, $rootScope, $timeout) {
     groupName = groupName || 'default';
     
     // Safety check: ensure textInputValues object exists for this group
-    if (!c.textInputValues[groupName]) {
-      c.textInputValues[groupName] = {};
-    }
+    c.ensureGroupExists(groupName);
     
     // Get the text input value
     var textValue = c.textInputValues[groupName][filterTemplate];
@@ -71,6 +78,7 @@ function($scope, $rootScope, $timeout) {
     c.textInputTimeouts[timeoutKey] = $timeout(function() {
       if (textValue && textValue.trim() !== '') {
         // Replace *text* with the actual value
+        // Note: In ServiceNow, GlideRecord handles query encoding to prevent injection
         var actualFilter = filterTemplate.replace(/\*text\*/g, textValue.trim());
         
         // Get the label for this filter
