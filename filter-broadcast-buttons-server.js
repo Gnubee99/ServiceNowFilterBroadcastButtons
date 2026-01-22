@@ -36,9 +36,22 @@
     // Convert grouped structure to array for easier template iteration
     for (var groupName in parsedFilters) {
       if (parsedFilters.hasOwnProperty(groupName)) {
+        var groupFilters = parsedFilters[groupName];
+        var processedFilters = {};
+        
+        // Process each filter to detect text input patterns
+        for (var filterKey in groupFilters) {
+          if (groupFilters.hasOwnProperty(filterKey)) {
+            processedFilters[filterKey] = {
+              label: groupFilters[filterKey],
+              isTextInput: filterKey.indexOf('*text*') !== -1
+            };
+          }
+        }
+        
         filterGroups.push({
           name: groupName,
-          filters: parsedFilters[groupName]
+          filters: processedFilters
         });
       }
     }
@@ -46,7 +59,16 @@
     data.isGrouped = true;
   } else {
     // For backward compatibility, keep flat structure
-    data.filters = parsedFilters;
+    var processedFlatFilters = {};
+    for (var flatFilterKey in parsedFilters) {
+      if (parsedFilters.hasOwnProperty(flatFilterKey)) {
+        processedFlatFilters[flatFilterKey] = {
+          label: parsedFilters[flatFilterKey],
+          isTextInput: flatFilterKey.indexOf('*text*') !== -1
+        };
+      }
+    }
+    data.filters = processedFlatFilters;
     data.isGrouped = false;
   }
   
