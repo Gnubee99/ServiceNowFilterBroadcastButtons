@@ -51,6 +51,11 @@ function($scope, $rootScope, $timeout) {
   c.onTextInputChange = function(filterTemplate, groupName) {
     groupName = groupName || 'default';
     
+    // Safety check: ensure textInputValues object exists for this group
+    if (!c.textInputValues[groupName]) {
+      c.textInputValues[groupName] = {};
+    }
+    
     // Get the text input value
     var textValue = c.textInputValues[groupName][filterTemplate];
     
@@ -127,9 +132,9 @@ function($scope, $rootScope, $timeout) {
     // Remove any previous version of this text input filter
     for (var existingFilter in c.data.activeFiltersByGroup[groupName]) {
       if (c.data.activeFiltersByGroup[groupName].hasOwnProperty(existingFilter)) {
-        // Check if this filter was generated from the same template
-        if (existingFilter.indexOf(filterTemplate.replace('*text*', '')) !== -1 || 
-            c.data.activeFiltersByGroup[groupName][existingFilter]._textInputTemplate === filterTemplate) {
+        var existingValue = c.data.activeFiltersByGroup[groupName][existingFilter];
+        // Check if this filter was generated from the same template by looking for the metadata marker
+        if (typeof existingValue === 'object' && existingValue._textInputTemplate === filterTemplate) {
           delete c.data.activeFiltersByGroup[groupName][existingFilter];
         }
       }
@@ -153,13 +158,12 @@ function($scope, $rootScope, $timeout) {
       return;
     }
     
-    // Remove any filter generated from this template
+    // Remove any filter generated from this template by checking the metadata marker
     for (var existingFilter in c.data.activeFiltersByGroup[groupName]) {
       if (c.data.activeFiltersByGroup[groupName].hasOwnProperty(existingFilter)) {
         var filterValue = c.data.activeFiltersByGroup[groupName][existingFilter];
-        // Check if this filter was generated from the same template
-        if ((typeof filterValue === 'object' && filterValue._textInputTemplate === filterTemplate) ||
-            (existingFilter.indexOf(filterTemplate.replace('*text*', '')) !== -1)) {
+        // Only check for the template marker to avoid false positives
+        if (typeof filterValue === 'object' && filterValue._textInputTemplate === filterTemplate) {
           delete c.data.activeFiltersByGroup[groupName][existingFilter];
         }
       }
