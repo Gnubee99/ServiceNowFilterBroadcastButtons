@@ -7,8 +7,10 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 - **Dynamic Filter Buttons**: Create multiple filter buttons from a JSON configuration
 - **Broadcast Filtering**: Filters are broadcast to list widgets using Angular's event system
 - **Additive Filtering**: Filters add onto existing table filters rather than replacing them
-- **Active State Indication**: Visual feedback showing which filter is currently active
-- **Clear Filter Option**: Optional button to clear the active filter
+- **Multi-Select with OR Logic**: Select multiple filter buttons to create OR-combined queries
+- **Toggle Functionality**: Click an active filter button to deselect it
+- **Active State Indication**: Visual feedback showing which filters are currently active
+- **Clear Filter Option**: Optional button to clear all active filters
 - **Customizable**: Configure button labels, filters, title, and custom broadcast events
 
 ## Installation
@@ -35,11 +37,31 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 ### Widget Options
 
 #### Filters (Required)
-A JSON object defining the filters and their labels. Each key is a filter query (e.g., `field=value`) and each value is the button label.
+A JSON object defining the filters and their labels. Supports both flat and grouped structures.
 
-**Format**: `{"field=value": "Label", "field=value": "Label", ...}`
+**Flat Format** (filters use OR logic):
+```json
+{
+  "field=value": "Label",
+  "field=value": "Label",
+  ...
+}
+```
 
-**Example**:
+**Grouped Format** (filters within groups use OR, between groups use AND):
+```json
+{
+  "Group Name": {
+    "field=value": "Label",
+    "field=value": "Label"
+  },
+  "Another Group": {
+    "field=value": "Label"
+  }
+}
+```
+
+**Flat Example**:
 ```json
 {
   "u_state=1": "Incomplete",
@@ -48,12 +70,33 @@ A JSON object defining the filters and their labels. Each key is a filter query 
 }
 ```
 
+**Grouped Example** (recommended to prevent filter conflicts):
+```json
+{
+  "States": {
+    "u_state=1": "Ordering Incomplete",
+    "u_state=3": "In Progress",
+    "u_state=4": "Completed"
+  },
+  "Employment Types": {
+    "u_reg_temp=11": "Regular Employee",
+    "u_reg_temp=1": "Contract Worker"
+  }
+}
+```
+
 **Example with ServiceNow i18n**:
 ```json
 {
-  "u_state=1": "${Incomplete}",
-  "u_state=3": "${In Progress}",
-  "u_state=4": "${Complete}"
+  "${States}": {
+    "u_state=1": "${Ordering Incomplete}",
+    "u_state=3": "${In Progress}",
+    "u_state=4": "${Completed}"
+  },
+  "${Employment Types}": {
+    "u_reg_temp=11": "${Regular Employee}",
+    "u_reg_temp=1": "${Contract Worker}"
+  }
 }
 ```
 
@@ -74,16 +117,68 @@ Custom event name to broadcast in addition to the standard `sp.list.filter.add` 
 
 ## How It Works
 
-### Broadcasting Filters
+### Multi-Select and Toggle Behavior
 
-When a filter button is clicked:
-1. The widget parses the filter string (e.g., `"u_state=1"` → field: `"u_state"`, value: `"1"`)
-2. Broadcasts the filter using Angular's `$rootScope.$broadcast()` with event name `sp.list.filter.add`
-3. The broadcast includes:
-   - `field`: The field name
-   - `value`: The field value
-   - `filter`: The complete filter string
-   - `label`: The button label
+The widget supports selecting multiple filter buttons simultaneously:
+- **Click to Select**: Click any filter button to activate it
+- **Click to Deselect**: Click an active filter button again to deselect it
+- **Multiple Selection**: Multiple buttons can be active at the same time
+- **Visual Feedback**: Active buttons are highlighted in blue, inactive buttons are white
+
+### Grouped vs Flat Filter Structure
+
+**Grouped Structure (Recommended)**:
+- Filters are organized into logical groups
+- Within each group: filters use OR logic
+- Between groups: filters use AND logic
+- Prevents conflicts between different filter types
+- Each group is displayed with a section header
+
+**Flat Structure (Backward Compatible)**:
+- All filters are at the same level
+- All selected filters use OR logic
+
+### Broadcasting Filters with AND/OR Logic
+
+**Grouped Filters:**
+When filter buttons are selected from grouped structure:
+1. Widget tracks active filters by group
+2. Combines filters within each group using `^OR`
+3. Combines groups using `^` (AND)
+4. Broadcasts the combined filter
+
+Example: Selecting "Incomplete" + "In Progress" from States group and "Regular Employee" from Employment Types group broadcasts: `u_state=1^ORu_state=3^u_reg_temp=11`
+
+This means: Show records where `(state is Incomplete OR In Progress) AND (employment type is Regular Employee)`
+
+**Flat Filters:**
+All selected filters are combined with `^OR` operator.
+
+The broadcast includes:
+- `field`: The field name (from first filter)
+- `value`: The field value (from first filter)
+- `filter`: The complete combined filter string
+- `label`: The button label
+- `activeFiltersByGroup`: Object containing active filters organized by group
+
+### Filter Examples
+
+**Grouped Filters:**
+- Select "Incomplete" from States → Broadcasts: `u_state=1`
+- Select "Incomplete" + "In Progress" from States → Broadcasts: `u_state=1^ORu_state=3`
+- Select "Incomplete" + "In Progress" from States AND "Regular Employee" from Employment Types → Broadcasts: `u_state=1^ORu_state=3^u_reg_temp=11`
+
+**Flat Filters:**
+- Select "Incomplete" → Broadcasts: `u_state=1`
+- Select "Incomplete" + "In Progress" → Broadcasts: `u_state=1^ORu_state=3`
+- Select "Incomplete" + "High Priority" → Broadcasts: `u_state=1^ORpriority=1`
+
+**Toggle Off:**
+- Click an active filter again → Removes it from active filters
+- Remaining filters are broadcast
+
+**Clear All:**
+- Click "Clear Filter" → All filters are deselected and a clear event is broadcast
 
 ### Integration with List Widgets
 

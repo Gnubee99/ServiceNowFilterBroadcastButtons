@@ -11,6 +11,7 @@
 │  │ HTML Template (filter-broadcast-buttons.html)          │ │
 │  │  - Renders filter buttons from JSON config             │ │
 │  │  - Shows active state with ng-class                    │ │
+│  │  - Supports multi-select with visual feedback          │ │
 │  │  - Optional clear button                               │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                          │                                   │
@@ -18,9 +19,10 @@
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │ Client Script (filter-broadcast-buttons-client.js)     │ │
 │  │  - Handles button click events                         │ │
-│  │  - Parses filter strings (e.g., "u_state=1")           │ │
+│  │  - Implements toggle logic (click to deselect)         │ │
+│  │  - Manages multiple active filters in object           │ │
+│  │  - Combines filters with OR logic (^OR operator)       │ │
 │  │  - Broadcasts filters using $rootScope.$broadcast()    │ │
-│  │  - Manages active filter state                         │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                          │                                   │
 │                          ▼                                   │
@@ -43,8 +45,13 @@
 │  Payload: {                                                  │
 │    field: "u_state",                                         │
 │    value: "1",                                               │
-│    filter: "u_state=1",                                      │
-│    label: "Incomplete"                                       │
+│    filter: "u_state=1^ORu_state=3^ORpriority=1",           │
+│    label: "Incomplete",                                      │
+│    activeFilters: {                                          │
+│      "u_state=1": "Incomplete",                             │
+│      "u_state=3": "In Progress",                            │
+│      "priority=1": "High Priority"                          │
+│    }                                                         │
 │  }                                                           │
 │                                                               │
 │  Event: 'sp.list.filter.clear' (when clear clicked)         │
@@ -61,8 +68,8 @@
 │                                                               │
 │  Action: Combines broadcast filter with existing filter      │
 │    Original Filter: "active=true"                            │
-│    Broadcast Filter: "u_state=1"                             │
-│    Combined: "active=true^u_state=1"                         │
+│    Broadcast Filter: "u_state=1^ORu_state=3^ORpriority=1"  │
+│    Combined: "active=true^u_state=1^ORu_state=3^OR..."      │
 │                                                               │
 │  Calls: c.server.update() to refresh list                   │
 │                                                               │
@@ -72,27 +79,94 @@
 ## Data Flow
 
 1. **User Action**: User clicks a filter button
-2. **Parse Filter**: Client script parses "u_state=1" into field and value
-3. **Broadcast Event**: Broadcasts filter data to all listeners
-4. **List Receives**: List widget receives broadcast event
-5. **Combine Filters**: List adds broadcast filter to existing filters using `^`
-6. **Update List**: List refreshes with combined filter
+2. **Toggle Check**: Client checks if filter is already active in its group
+3. **Update State**: Add or remove filter from activeFiltersByGroup[groupName]
+4. **Combine Filters**: 
+   - Within each group: Join filters with `^OR` operator
+   - Between groups: Join with `^` operator (AND)
+5. **Broadcast Event**: Broadcasts combined filter data to all listeners
+6. **List Receives**: List widget receives broadcast event
+7. **Combine Filters**: List adds broadcast filter to existing filters using `^`
+8. **Update List**: List refreshes with combined filter
 
 ## Filter Combination Logic
+
+### Grouped Filters (Recommended)
+
+**Within Groups (OR Logic):**
+```javascript
+// User selects multiple buttons from "States" group
+activeFiltersByGroup = {
+  "States": {
+    "u_state=1": "Ordering Incomplete",
+    "u_state=3": "In Progress"
+  }
+}
+
+// Filters within group are combined with OR
+groupFilter = "u_state=1^ORu_state=3"
+```
+
+**Between Groups (AND Logic):**
+```javascript
+// User selects from multiple groups
+activeFiltersByGroup = {
+  "States": {
+    "u_state=1": "Ordering Incomplete",
+    "u_state=3": "In Progress"
+  },
+  "Employment Types": {
+    "u_reg_temp=11": "Regular Employee"
+  }
+}
+
+// Groups are combined with AND
+broadcastFilter = "u_state=1^ORu_state=3^u_reg_temp=11"
+
+// This means: Show records where
+//   ((u_state=1) OR (u_state=3)) AND (u_reg_temp=11)
+// i.e., (Ordering Incomplete OR In Progress) AND Regular Employee
+```
+
+### Flat Filters (Backward Compatible)
+
+```javascript
+// User selects multiple buttons (flat structure)
+activeFiltersByGroup = {
+  "default": {
+    "u_state=1": "Incomplete",
+    "u_state=3": "In Progress",
+    "priority=1": "High Priority"
+  }
+}
+
+// All filters are combined with OR
+broadcastFilter = "u_state=1^ORu_state=3^ORpriority=1"
+
+// This means: Show records where
+//   (u_state=1) OR (u_state=3) OR (priority=1)
+```
+
+### Integration with Existing Filters
 
 ```javascript
 // Original list filter (hardcoded or from options)
 originalFilter = "active=true^assigned_to=javascript:gs.getUserID()"
 
-// User clicks "In Progress" button
-broadcastFilter = "u_state=3"
+// User selects grouped filters
+broadcastFilter = "u_state=1^ORu_state=3^u_reg_temp=11"
 
 // Combined filter (additive, not replacement)
-finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=3"
+finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_state=3^u_reg_temp=11"
+
+// This means: Show records where
+//   (active=true) AND (assigned_to=currentUser) AND 
+//   ((u_state=1) OR (u_state=3)) AND (u_reg_temp=11)
 ```
 
 ## Widget Options Schema
 
+**Flat Structure:**
 ```json
 {
   "filters": {
@@ -106,27 +180,65 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=3"
 }
 ```
 
+**Grouped Structure (Recommended):**
+```json
+{
+  "filters": {
+    "States": {
+      "u_state=1": "Ordering Incomplete",
+      "u_state=3": "In Progress",
+      "u_state=4": "Completed"
+    },
+    "Employment Types": {
+      "u_reg_temp=11": "Regular Employee",
+      "u_reg_temp=1": "Contract Worker"
+    }
+  },
+  "title": "Filter By:",
+  "show_clear_button": true,
+  "broadcast_event": "custom.filter.event"
+}
+```
+
 ## Key Design Decisions
 
-### 1. Additive Filtering
+### 1. Grouped Filters with AND/OR Logic
+- Supports both flat and grouped filter structures
+- Grouped structure prevents filter conflicts between different filter types
+- Within groups: Filters use OR logic (e.g., State1 OR State2)
+- Between groups: Filters use AND logic (e.g., (State1 OR State2) AND EmployeeType)
+- Provides more flexible and precise filtering
+- Toggle behavior: clicking active filter deselects it
+
+### 2. Backward Compatibility
+- Flat filter structure still supported
+- Server script auto-detects structure type
+- Client script handles both formats seamlessly
+- Existing implementations continue to work
+
+### 3. Additive Filtering
 - Broadcast filters **ADD** to existing filters, not replace
-- Uses `^` (AND operator) to combine filters
+- Uses `^` (AND operator) to combine with original filters
+- OR filters within groups are maintained
 - Preserves original list configuration
 
-### 2. Event-Based Communication
+### 4. Event-Based Communication
 - Uses Angular's `$rootScope.$broadcast()`
 - Standard event: `sp.list.filter.add`
 - Optional custom events for specialized widgets
+- Broadcast includes activeFiltersByGroup object for consumer flexibility
 
-### 3. State Management
-- Tracks active filter for visual feedback
-- Clear button resets to original state
+### 5. State Management
+- Tracks active filters by group in nested object
+- Clear button resets all groups
 - No persistent state between page loads
+- Visual feedback for active/inactive states per group
 
-### 4. Flexible Configuration
+### 6. Flexible Configuration
 - JSON-based filter definition
 - Supports any ServiceNow field and operator
-- Dynamic button generation
+- Dynamic button and group generation
+- Toggle functionality enabled by default
 
 ## File Structure
 
