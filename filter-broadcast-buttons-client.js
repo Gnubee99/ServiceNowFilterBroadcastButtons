@@ -189,37 +189,55 @@ function($scope, $rootScope, $timeout) {
   // Broadcast combined filters to list widgets
   c.broadcastFilters = function() {
     // Build combined filter with group logic:
-    // - Within a group: use OR (^OR)
-    // - Between groups: use AND (^)
+    // - Text-based filters: ALL use AND (^) - each text input is a separate AND condition
+    // - Button filters within a group: use OR (^OR)
+    // - Between button groups: use AND (^)
     var groupFilters = [];
+    var textFilters = [];
     var firstLabel = '';
     
     for (var gName in c.data.activeFiltersByGroup) {
       if (c.data.activeFiltersByGroup.hasOwnProperty(gName)) {
-        var filtersInGroup = [];
+        var buttonFiltersInGroup = [];
         for (var filterKey in c.data.activeFiltersByGroup[gName]) {
           if (c.data.activeFiltersByGroup[gName].hasOwnProperty(filterKey)) {
-            filtersInGroup.push(filterKey);
             var filterValue = c.data.activeFiltersByGroup[gName][filterKey];
+            
+            // Check if this is a text input filter (has _textInputTemplate marker)
+            var isTextFilter = typeof filterValue === 'object' && filterValue._textInputTemplate;
+            
+            if (isTextFilter) {
+              // Text filters are added to textFilters array (for AND logic)
+              textFilters.push(filterKey);
+            } else {
+              // Button filters are added to buttonFiltersInGroup (for OR logic within group)
+              buttonFiltersInGroup.push(filterKey);
+            }
+            
             if (!firstLabel && filterValue) {
               firstLabel = typeof filterValue === 'string' ? filterValue : filterValue.label;
             }
           }
         }
         
-        if (filtersInGroup.length > 0) {
-          if (filtersInGroup.length === 1) {
+        // Process button filters with OR logic within the group
+        if (buttonFiltersInGroup.length > 0) {
+          if (buttonFiltersInGroup.length === 1) {
             // Single filter in group, no need for parentheses
-            groupFilters.push(filtersInGroup[0]);
+            groupFilters.push(buttonFiltersInGroup[0]);
           } else {
             // Multiple filters in group, join with ^OR
-            groupFilters.push(filtersInGroup.join('^OR'));
+            groupFilters.push(buttonFiltersInGroup.join('^OR'));
           }
         }
       }
     }
     
-    var combinedFilter = groupFilters.join('^');
+    // Combine all filters:
+    // 1. Button filters (already combined within groups with OR, groups with AND)
+    // 2. Text filters (each as separate AND condition)
+    var allFilters = groupFilters.concat(textFilters);
+    var combinedFilter = allFilters.join('^');
     
     // Parse the combined filter string to extract field and value
     var field = '';
