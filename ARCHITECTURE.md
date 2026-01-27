@@ -106,7 +106,7 @@
 
 ## Filter Combination Logic
 
-### Grouped Filters (Recommended)
+### Button Filters
 
 **Within Groups (OR Logic):**
 ```javascript
@@ -118,13 +118,13 @@ activeFiltersByGroup = {
   }
 }
 
-// Filters within group are combined with OR
+// Button filters within group are combined with OR
 groupFilter = "u_state=1^ORu_state=3"
 ```
 
 **Between Groups (AND Logic):**
 ```javascript
-// User selects from multiple groups
+// User selects from multiple button groups
 activeFiltersByGroup = {
   "States": {
     "u_state=1": "Ordering Incomplete",
@@ -135,12 +135,52 @@ activeFiltersByGroup = {
   }
 }
 
-// Groups are combined with AND
+// Button groups are combined with AND
 broadcastFilter = "u_state=1^ORu_state=3^u_reg_temp=11"
 
 // This means: Show records where
 //   ((u_state=1) OR (u_state=3)) AND (u_reg_temp=11)
 // i.e., (Ordering Incomplete OR In Progress) AND Regular Employee
+```
+
+### Text Input Filters (AND Logic)
+
+**All Text Inputs Use AND:**
+```javascript
+// User enters values in text input fields
+activeFiltersByGroup = {
+  "Text Search": {
+    "u_name=John": { label: "Name Contains", _textInputTemplate: "u_name=*text*" },
+    "u_email=john@": { label: "Email Contains", _textInputTemplate: "u_email=*text*" }
+  }
+}
+
+// Text filters are ALWAYS combined with AND (not OR)
+broadcastFilter = "u_name=John^u_email=john@"
+
+// This means: Show records where
+//   (u_name contains John) AND (u_email contains john@)
+```
+
+**Combined Button + Text Filters:**
+```javascript
+// User selects buttons and enters text
+activeFiltersByGroup = {
+  "States": {
+    "u_state=1": "Ordering Incomplete",
+    "u_state=3": "In Progress"
+  },
+  "Text Search": {
+    "u_name=John": { label: "Name Contains", _textInputTemplate: "u_name=*text*" }
+  }
+}
+
+// Button filters use OR within groups, text filters use AND
+broadcastFilter = "u_state=1^ORu_state=3^u_name=John"
+
+// This means: Show records where
+//   ((u_state=1) OR (u_state=3)) AND (u_name contains John)
+// i.e., (Ordering Incomplete OR In Progress) AND Name contains John
 ```
 
 ### Flat Filters (Backward Compatible)
@@ -220,13 +260,16 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_s
 ### 1. Grouped Filters with AND/OR Logic
 - Supports both flat and grouped filter structures
 - Grouped structure prevents filter conflicts between different filter types
-- Within groups: Filters use OR logic (e.g., State1 OR State2)
-- Between groups: Filters use AND logic (e.g., (State1 OR State2) AND EmployeeType)
+- Button filters within groups: Use OR logic (e.g., State1 OR State2)
+- Between button groups: Use AND logic (e.g., (State1 OR State2) AND EmployeeType)
+- Text input filters: ALWAYS use AND logic, automatically grouped in "Text Search" section
 - Provides more flexible and precise filtering
 - Toggle behavior: clicking active filter deselects it
 
 ### 2. Text Input Filters with *text* Placeholder
 - Automatic detection: Server detects `*text*` pattern in filter values
+- Automatic grouping: Text inputs are automatically placed in "Text Search" section
+- AND logic: All text-based searches use AND conditions (not OR)
 - Dynamic rendering: HTML template renders text input instead of button
 - Placeholder substitution: Client replaces `*text*` with user input
 - Debouncing: 1-second delay after typing stops before broadcasting
