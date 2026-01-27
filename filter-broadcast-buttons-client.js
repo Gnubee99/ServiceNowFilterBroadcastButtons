@@ -243,9 +243,10 @@ function($scope, $rootScope, $timeout) {
     var field = '';
     var value = '';
     
-    // Try to parse simple field=value pattern from first individual filter
-    if (groupFilters.length > 0) {
-      var firstFilter = groupFilters[0];
+    // Try to parse simple field=value pattern from first filter
+    // Check both button filters and text filters
+    if (allFilters.length > 0) {
+      var firstFilter = allFilters[0];
       // If first filter contains ^OR, extract just the first individual filter
       var firstIndividualFilter = firstFilter.split('^OR')[0];
       // Extract field and value from field=value pattern
