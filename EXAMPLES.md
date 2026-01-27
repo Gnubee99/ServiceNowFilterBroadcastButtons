@@ -259,6 +259,36 @@ Advanced filtering with encoded queries.
 
 ---
 
+## Example 11: Text Input Filters
+
+Using `*text*` placeholder to allow user input for dynamic filtering.
+
+### Widget Options
+```json
+{
+  "filters": "{\"States\": {\"u_state=1\": \"Incomplete\", \"u_state=3\": \"In Progress\", \"u_state=4\": \"Complete\"}, \"Custom Search\": {\"u_name=*text*\": \"Name Contains\", \"u_description=*text*\": \"Description Contains\", \"sys_id=*text*\": \"By System ID\"}}",
+  "title": "Filter Records:",
+  "show_clear_button": "true"
+}
+```
+
+### Expected Behavior
+- Displays 3 buttons for state filters (Incomplete, In Progress, Complete)
+- Displays 3 text input fields: Name Contains, Description Contains, By System ID
+- When user types in "Name Contains" field, waits 1 second after they stop typing, then broadcasts filter like `u_name=John`
+- Text inputs can be combined with button filters
+- Example: Select "In Progress" button + type "Smith" in "Name Contains" → Broadcasts: `u_state=3^u_name=Smith`
+- Empty text inputs are automatically ignored
+- Text input filters are debounced to prevent excessive updates while typing
+
+### Use Cases
+- Search by name, email, or other text fields
+- Filter by IDs or reference numbers
+- Partial text matching with LIKE operator
+- Dynamic user-driven filtering
+
+---
+
 ## Troubleshooting Examples
 
 ### Problem: Filters not applying

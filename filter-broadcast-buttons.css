@@ -68,3 +68,32 @@
   border-color: #eea236;
   color: #fff;
 }
+
+.filter-broadcast-buttons .text-input-filter {
+  display: inline-block;
+  margin: 0 10px 10px 0;
+  min-width: 200px;
+}
+
+.filter-broadcast-buttons .text-input-filter label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.filter-broadcast-buttons .text-input-filter input.form-control {
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.filter-broadcast-buttons .text-input-filter input.form-control:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 5px rgba(0, 102, 204, 0.3);
+  outline: none;
+}

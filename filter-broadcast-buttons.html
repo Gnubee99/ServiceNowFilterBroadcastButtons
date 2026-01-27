@@ -9,11 +9,25 @@
         <button 
           type="button" 
           class="btn btn-default"
-          ng-repeat="(filter, label) in group.filters"
-          ng-click="c.applyFilter(filter, label, group.name)"
+          ng-if="!filterInfo.isTextInput"
+          ng-repeat="(filter, filterInfo) in group.filters"
+          ng-click="c.applyFilter(filter, filterInfo.label, group.name)"
           ng-class="{'btn-primary': c.isFilterActive(filter, group.name), 'btn-default': !c.isFilterActive(filter, group.name)}">
-          {{label}}
+          {{filterInfo.label}}
         </button>
+        <div 
+          class="text-input-filter"
+          ng-if="filterInfo.isTextInput"
+          ng-repeat="(filter, filterInfo) in group.filters">
+          <label for="text-input-{{group.name}}-{{filter}}">{{filterInfo.label}}</label>
+          <input 
+            type="text" 
+            id="text-input-{{group.name}}-{{filter}}"
+            class="form-control"
+            ng-model="c.textInputValues[group.name][filter]"
+            ng-change="c.onTextInputChange(filter, group.name)"
+            placeholder="Enter value...">
+        </div>
       </div>
     </div>
   </div>
@@ -23,11 +37,25 @@
     <button 
       type="button" 
       class="btn btn-default"
-      ng-repeat="(filter, label) in c.data.filters"
-      ng-click="c.applyFilter(filter, label)"
+      ng-if="!filterInfo.isTextInput"
+      ng-repeat="(filter, filterInfo) in c.data.filters"
+      ng-click="c.applyFilter(filter, filterInfo.label)"
       ng-class="{'btn-primary': c.isFilterActive(filter), 'btn-default': !c.isFilterActive(filter)}">
-      {{label}}
+      {{filterInfo.label}}
     </button>
+    <div 
+      class="text-input-filter"
+      ng-if="filterInfo.isTextInput"
+      ng-repeat="(filter, filterInfo) in c.data.filters">
+      <label for="text-input-default-{{filter}}">{{filterInfo.label}}</label>
+      <input 
+        type="text" 
+        id="text-input-default-{{filter}}"
+        class="form-control"
+        ng-model="c.textInputValues['default'][filter]"
+        ng-change="c.onTextInputChange(filter, 'default')"
+        placeholder="Enter value...">
+    </div>
   </div>
   
   <!-- Clear button -->

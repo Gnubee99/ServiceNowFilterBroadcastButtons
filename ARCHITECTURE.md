@@ -10,6 +10,7 @@
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │ HTML Template (filter-broadcast-buttons.html)          │ │
 │  │  - Renders filter buttons from JSON config             │ │
+│  │  - Renders text input fields for *text* filters        │ │
 │  │  - Shows active state with ng-class                    │ │
 │  │  - Supports multi-select with visual feedback          │ │
 │  │  - Optional clear button                               │ │
@@ -19,7 +20,9 @@
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │ Client Script (filter-broadcast-buttons-client.js)     │ │
 │  │  - Handles button click events                         │ │
+│  │  - Handles text input changes with debouncing          │ │
 │  │  - Implements toggle logic (click to deselect)         │ │
+│  │  - Replaces *text* with actual user input              │ │
 │  │  - Manages multiple active filters in object           │ │
 │  │  - Combines filters with OR logic (^OR operator)       │ │
 │  │  - Broadcasts filters using $rootScope.$broadcast()    │ │
@@ -29,6 +32,7 @@
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │ Server Script (filter-broadcast-buttons-server.js)     │ │
 │  │  - Parses JSON options                                 │ │
+│  │  - Detects *text* patterns in filters                  │ │
 │  │  - Prepares data for client                            │ │
 │  │  - Handles initialization                              │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -78,6 +82,7 @@
 
 ## Data Flow
 
+### Button Filter Flow
 1. **User Action**: User clicks a filter button
 2. **Toggle Check**: Client checks if filter is already active in its group
 3. **Update State**: Add or remove filter from activeFiltersByGroup[groupName]
@@ -88,6 +93,16 @@
 6. **List Receives**: List widget receives broadcast event
 7. **Combine Filters**: List adds broadcast filter to existing filters using `^`
 8. **Update List**: List refreshes with combined filter
+
+### Text Input Filter Flow
+1. **User Action**: User types in a text input field
+2. **Debounce**: Cancel previous timeout and start new 1-second timer
+3. **Timeout Complete**: After 1 second of inactivity, process input
+4. **Replace Placeholder**: Replace `*text*` in filter template with user's input
+5. **Update State**: Add/update filter in activeFiltersByGroup[groupName] with marker
+6. **Combine Filters**: Same as button filters - join with OR/AND logic
+7. **Broadcast Event**: Broadcasts combined filter with substituted text value
+8. **Empty Input**: If text is cleared, remove the filter and broadcast update
 
 ## Filter Combination Logic
 
@@ -180,7 +195,7 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_s
 }
 ```
 
-**Grouped Structure (Recommended):**
+**Grouped Structure with Text Inputs (Recommended):**
 ```json
 {
   "filters": {
@@ -189,9 +204,9 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_s
       "u_state=3": "In Progress",
       "u_state=4": "Completed"
     },
-    "Employment Types": {
-      "u_reg_temp=11": "Regular Employee",
-      "u_reg_temp=1": "Contract Worker"
+    "Custom Search": {
+      "u_name=*text*": "Name Contains",
+      "u_description=*text*": "Description Contains"
     }
   },
   "title": "Filter By:",
@@ -210,31 +225,41 @@ finalFilter = "active=true^assigned_to=javascript:gs.getUserID()^u_state=1^ORu_s
 - Provides more flexible and precise filtering
 - Toggle behavior: clicking active filter deselects it
 
-### 2. Backward Compatibility
+### 2. Text Input Filters with *text* Placeholder
+- Automatic detection: Server detects `*text*` pattern in filter values
+- Dynamic rendering: HTML template renders text input instead of button
+- Placeholder substitution: Client replaces `*text*` with user input
+- Debouncing: 1-second delay after typing stops before broadcasting
+- Smart updates: Removes filter when input is empty
+- Metadata tracking: Uses `_textInputTemplate` marker to track original template
+- Conflict prevention: Removes previous filter version before adding new one
+
+### 3. Backward Compatibility
 - Flat filter structure still supported
 - Server script auto-detects structure type
 - Client script handles both formats seamlessly
 - Existing implementations continue to work
+- Text input feature is additive and optional
 
-### 3. Additive Filtering
+### 4. Additive Filtering
 - Broadcast filters **ADD** to existing filters, not replace
 - Uses `^` (AND operator) to combine with original filters
 - OR filters within groups are maintained
 - Preserves original list configuration
 
-### 4. Event-Based Communication
+### 5. Event-Based Communication
 - Uses Angular's `$rootScope.$broadcast()`
 - Standard event: `sp.list.filter.add`
 - Optional custom events for specialized widgets
 - Broadcast includes activeFiltersByGroup object for consumer flexibility
 
-### 5. State Management
+### 6. State Management
 - Tracks active filters by group in nested object
 - Clear button resets all groups
 - No persistent state between page loads
 - Visual feedback for active/inactive states per group
 
-### 6. Flexible Configuration
+### 7. Flexible Configuration
 - JSON-based filter definition
 - Supports any ServiceNow field and operator
 - Dynamic button and group generation

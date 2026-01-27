@@ -5,6 +5,7 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 ## Features
 
 - **Dynamic Filter Buttons**: Create multiple filter buttons from a JSON configuration
+- **Text Input Filters**: Use `*text*` placeholder in filter values to create text input fields for custom user input
 - **Broadcast Filtering**: Filters are broadcast to list widgets using Angular's event system
 - **Additive Filtering**: Filters add onto existing table filters rather than replacing them
 - **Multi-Select with OR Logic**: Select multiple filter buttons to create OR-combined queries
@@ -12,6 +13,7 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 - **Active State Indication**: Visual feedback showing which filters are currently active
 - **Clear Filter Option**: Optional button to clear all active filters
 - **Customizable**: Configure button labels, filters, title, and custom broadcast events
+- **Debounced Text Input**: Text input filters wait 1 second after user stops typing before broadcasting
 
 ## Installation
 
@@ -100,6 +102,23 @@ A JSON object defining the filters and their labels. Supports both flat and grou
 }
 ```
 
+**Example with Text Input Filters**:
+```json
+{
+  "States": {
+    "u_state=1": "Incomplete",
+    "u_state=3": "In Progress",
+    "u_state=4": "Complete"
+  },
+  "Custom Search": {
+    "u_name=*text*": "Name Contains",
+    "u_description=*text*": "Description Contains"
+  }
+}
+```
+
+When a filter value contains `*text*`, it will render as a text input field instead of a button. The `*text*` placeholder will be replaced with the user's input when broadcasting the filter. Text inputs are debounced with a 1-second delay after the user stops typing.
+
 #### Title (Optional)
 Text to display above the filter buttons.
 
@@ -124,6 +143,21 @@ The widget supports selecting multiple filter buttons simultaneously:
 - **Click to Deselect**: Click an active filter button again to deselect it
 - **Multiple Selection**: Multiple buttons can be active at the same time
 - **Visual Feedback**: Active buttons are highlighted in blue, inactive buttons are white
+
+### Text Input Filters
+
+Filters can include text input fields for dynamic user input:
+- **Placeholder Pattern**: Use `*text*` in the filter value (e.g., `"u_name=*text*"`)
+- **Automatic Detection**: The widget automatically detects `*text*` and renders a text input field instead of a button
+- **Dynamic Substitution**: When the user types, `*text*` is replaced with their input (e.g., `u_name=*text*` becomes `u_name=John`)
+- **Debouncing**: The filter is broadcast 1 second after the user stops typing, preventing excessive updates
+- **Clear on Empty**: If the user clears the text input, the filter is automatically removed
+- **Combined with Buttons**: Text inputs and buttons can coexist in the same filter group
+
+**Example Use Cases**:
+- Search by name: `"u_name=*text*"` → User types "John" → Broadcasts `u_name=John`
+- Filter by ID: `"sys_id=*text*"` → User types "abc123" → Broadcasts `sys_id=abc123`
+- Contains search: `"descriptionLIKE*text*"` → User types "urgent" → Broadcasts `descriptionLIKEurgent`
 
 ### Grouped vs Flat Filter Structure
 
