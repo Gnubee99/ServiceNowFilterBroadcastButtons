@@ -8,7 +8,8 @@ A ServiceNow Service Portal widget that broadcasts filters to list widgets on th
 - **Text Input Filters**: Use `*text*` placeholder in filter values to create text input fields for custom user input
 - **Broadcast Filtering**: Filters are broadcast to list widgets using Angular's event system
 - **Additive Filtering**: Filters add onto existing table filters rather than replacing them
-- **Multi-Select with OR Logic**: Select multiple filter buttons to create OR-combined queries
+- **Multi-Select with OR Logic**: Select multiple filter buttons within a group to create OR-combined queries
+- **Text Search with AND Logic**: All text-based searches use AND conditions for precise filtering
 - **Toggle Functionality**: Click an active filter button to deselect it
 - **Active State Indication**: Visual feedback showing which filters are currently active
 - **Clear Filter Option**: Optional button to clear all active filters
@@ -149,10 +150,11 @@ The widget supports selecting multiple filter buttons simultaneously:
 Filters can include text input fields for dynamic user input:
 - **Placeholder Pattern**: Use `*text*` in the filter value (e.g., `"u_name=*text*"`)
 - **Automatic Detection**: The widget automatically detects `*text*` and renders a text input field instead of a button
+- **Automatic Grouping**: Text input filters are automatically placed in a "Text Search" section
+- **AND Logic**: ALL text-based searches are combined with AND conditions (unlike button filters which use OR within groups)
 - **Dynamic Substitution**: When the user types, `*text*` is replaced with their input (e.g., `u_name=*text*` becomes `u_name=John`)
 - **Debouncing**: The filter is broadcast 1 second after the user stops typing, preventing excessive updates
 - **Clear on Empty**: If the user clears the text input, the filter is automatically removed
-- **Combined with Buttons**: Text inputs and buttons can coexist in the same filter group
 
 **Example Use Cases**:
 - Search by name: `"u_name=*text*"` → User types "John" → Broadcasts `u_name=John`
@@ -163,8 +165,9 @@ Filters can include text input fields for dynamic user input:
 
 **Grouped Structure (Recommended)**:
 - Filters are organized into logical groups
-- Within each group: filters use OR logic
-- Between groups: filters use AND logic
+- Button filters within each group: use OR logic
+- Between button groups: use AND logic
+- Text input filters: automatically grouped in "Text Search" section and use AND logic
 - Prevents conflicts between different filter types
 - Each group is displayed with a section header
 
@@ -174,10 +177,10 @@ Filters can include text input fields for dynamic user input:
 
 ### Broadcasting Filters with AND/OR Logic
 
-**Grouped Filters:**
+**Button Filters (Grouped Structure):**
 When filter buttons are selected from grouped structure:
 1. Widget tracks active filters by group
-2. Combines filters within each group using `^OR`
+2. Combines button filters within each group using `^OR`
 3. Combines groups using `^` (AND)
 4. Broadcasts the combined filter
 
@@ -185,8 +188,23 @@ Example: Selecting "Incomplete" + "In Progress" from States group and "Regular E
 
 This means: Show records where `(state is Incomplete OR In Progress) AND (employment type is Regular Employee)`
 
+**Text Input Filters:**
+Text-based searches always use AND logic:
+1. All text inputs are automatically placed in a "Text Search" section
+2. Each text input creates a separate AND condition
+3. Text filters are combined with button filters using `^` (AND)
+
+Example: Selecting "Incomplete" from States and entering "John" in Name and "urgent" in Description broadcasts: `u_state=1^u_name=John^u_description=urgent`
+
+This means: Show records where `(state is Incomplete) AND (name contains John) AND (description contains urgent)`
+
+**Combined Example:**
+Selecting "Incomplete" + "In Progress" from States, "Regular" from Types, and entering "John" in Name broadcasts: `u_state=1^ORu_state=3^u_type=regular^u_name=John`
+
+This means: Show records where `(state is Incomplete OR In Progress) AND (type is Regular) AND (name contains John)`
+
 **Flat Filters:**
-All selected filters are combined with `^OR` operator.
+All selected button filters are combined with `^OR` operator. If text inputs are present, they are separated into the "Text Search" section automatically.
 
 The broadcast includes:
 - `field`: The field name (from first filter)
@@ -197,10 +215,20 @@ The broadcast includes:
 
 ### Filter Examples
 
-**Grouped Filters:**
+**Button Filters (Grouped):**
 - Select "Incomplete" from States → Broadcasts: `u_state=1`
 - Select "Incomplete" + "In Progress" from States → Broadcasts: `u_state=1^ORu_state=3`
 - Select "Incomplete" + "In Progress" from States AND "Regular Employee" from Employment Types → Broadcasts: `u_state=1^ORu_state=3^u_reg_temp=11`
+
+**Text Input Filters:**
+- Enter "John" in Name → Broadcasts: `u_name=John`
+- Enter "John" in Name + "smith@" in Email → Broadcasts: `u_name=John^u_email=smith@`
+- Enter "John" in Name + "555" in Phone + "urgent" in Description → Broadcasts: `u_name=John^u_phone=555^u_description=urgent`
+
+**Combined Button + Text Filters:**
+- Select "Incomplete" from States + Enter "John" in Name → Broadcasts: `u_state=1^u_name=John`
+- Select "Incomplete" + "In Progress" from States + Enter "John" in Name → Broadcasts: `u_state=1^ORu_state=3^u_name=John`
+- Select "Incomplete" + "In Progress" from States + "Regular" from Types + Enter "John" in Name → Broadcasts: `u_state=1^ORu_state=3^u_type=regular^u_name=John`
 
 **Flat Filters:**
 - Select "Incomplete" → Broadcasts: `u_state=1`
